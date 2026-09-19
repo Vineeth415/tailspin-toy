@@ -42,11 +42,30 @@ if (!game) {
             </Tag>
           )}
           {game.publisher && (
-            <Tag color="purple" data-testid="game-details-publisher">
-              {game.publisher.name}
-            </Tag>
+            <a href={`/publisher/${game.publisher.id}`} class="inline-flex" data-testid="game-details-publisher-link">
+              <Tag color="purple" data-testid="game-details-publisher">
+                {game.publisher.name}
+              </Tag>
+            </a>
           )}
         </div>
+
+        {(game.category?.description || game.publisher?.description) && (
+          <div class="grid gap-4 md:grid-cols-2 mt-6">
+            {game.category?.description && (
+              <section class="rounded-xl border border-slate-700 bg-slate-900/40 p-4" data-testid="game-details-category-description">
+                <h2 class="text-lg font-semibold text-slate-200 mb-2">Category</h2>
+                <p class="text-slate-400">{game.category.description}</p>
+              </section>
+            )}
+            {game.publisher?.description && (
+              <section class="rounded-xl border border-slate-700 bg-slate-900/40 p-4" data-testid="game-details-publisher-description">
+                <h2 class="text-lg font-semibold text-slate-200 mb-2">Publisher</h2>
+                <p class="text-slate-400">{game.publisher.description}</p>
+              </section>
+            )}
+          </div>
+        )}
 
         <div class="space-y-4 mt-6">
           <h2 class="text-lg font-semibold text-slate-200 mb-2">About this game</h2>

@@ -42,6 +42,11 @@ npm run build      # prebuild migrates + seeds, then builds the static site
 npm run preview
 ```
 
+The home page supports live catalog filtering by one or more categories, by
+publisher, or by both together. Filter controls are keyboard accessible and
+show a no-results state when the current search/filter combination has no
+matches.
+
 ## Database
 
 The SQLite database is built from `db/games.csv` — there is no live data to migrate.
@@ -72,6 +77,16 @@ npm run lint
 ```
 
 ESLint is also run automatically in CI on pull requests to `main`.
+
+## Coding standards
+
+Keep code clear and maintainable by documenting intent rather than restating mechanics. Comments should explain why a block exists, why a decision was made, or what trade-off it addresses; they should not paraphrase the function or template already in view.
+
+The same convention applies to the data layer and component contracts:
+
+- Exported functions in `db/` and `src/lib/` should include JSDoc/TSDoc describing the purpose, inputs, and return value.
+- Reusable `.astro` components should document their `Props` interfaces so the API stays self-explanatory.
+- Update or remove stale comments when changing neighbouring code.
 
 ## Type checking
 
