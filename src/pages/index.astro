@@ -4,11 +4,14 @@ import GameCard from '../components/GameCard.astro';
 import PageHero from '../components/PageHero.astro';
 import EmptyState from '../components/EmptyState.astro';
 import { getDatabase } from '../lib/db';
-import { getAllGames } from '../lib/games';
+import { getAllGames, getCatalogSummary } from '../lib/games';
 
 export const prerender = true;
 
 const games = await getAllGames(getDatabase());
+const summary = await getCatalogSummary(getDatabase());
+const categories = [...new Set(games.map((game) => game.category?.name).filter((name): name is string => Boolean(name)))];
+const publishers = [...new Set(games.map((game) => game.publisher?.name).filter((name): name is string => Boolean(name)))];
 ---
 
 <Layout title="Tailspin Toys - Crowdfunding your new favorite game!">
@@ -18,16 +21,168 @@ const games = await getAllGames(getDatabase());
       subtitle="Find your next game! And maybe even back one! Explore our collection!"
     />
 
+    <section class="mb-8 rounded-2xl border border-slate-700 bg-slate-800/60 p-5 shadow-lg" aria-label="Catalog summary" data-testid="catalog-summary">
+      <h2 class="text-xl font-semibold text-slate-100 mb-4">Catalog summary</h2>
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="rounded-xl border border-slate-700 bg-slate-900/60 p-4" data-testid="catalog-total">
+          <p class="text-sm text-slate-400 uppercase tracking-wide">Total games</p>
+          <p class="mt-2 text-3xl font-bold text-slate-100">{summary.totalGames}</p>
+        </div>
+        <div class="rounded-xl border border-slate-700 bg-slate-900/60 p-4" data-testid="catalog-average-rating">
+          <p class="text-sm text-slate-400 uppercase tracking-wide">Average star rating</p>
+          <p class="mt-2 text-3xl font-bold text-slate-100">{summary.averageRating !== null ? summary.averageRating.toFixed(1) : 'No ratings yet'}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-8 rounded-2xl border border-slate-700 bg-slate-800/60 p-5 shadow-lg" aria-label="Game catalog filters">
+      <div class="grid gap-4 md:grid-cols-3">
+        <label class="block text-sm font-medium text-slate-200" for="game-search">
+          Search games
+          <input
+            id="game-search"
+            type="search"
+            placeholder="Search by title"
+            class="mt-2 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid="game-search"
+          />
+        </label>
+
+        <label class="block text-sm font-medium text-slate-200" for="game-sort">
+          Sort games
+          <select
+            id="game-sort"
+            class="mt-2 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid="game-sort"
+          >
+            <option value="title-asc">Title: A–Z</option>
+            <option value="title-desc">Title: Z–A</option>
+            <option value="rating-desc">Rating: High to low</option>
+            <option value="rating-asc">Rating: Low to high</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="mt-6 grid gap-6 md:grid-cols-2">
+        <fieldset data-testid="category-filters" class="rounded-xl border border-slate-700 bg-slate-900/50 p-4">
+          <legend class="mb-3 text-sm font-medium text-slate-200">Filter by category</legend>
+          <div class="flex flex-wrap gap-3">
+            {categories.map((category) => (
+              <label class="inline-flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200" data-testid={`category-filter-${category}`}>
+                <input type="checkbox" value={category} data-filter-type="category" data-filter-value={category} data-testid={`category-filter-input-${category}`} class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-blue-500 focus:ring-blue-500" />
+                <span>{category}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset data-testid="publisher-filters" class="rounded-xl border border-slate-700 bg-slate-900/50 p-4">
+          <legend class="mb-3 text-sm font-medium text-slate-200">Filter by publisher</legend>
+          <div class="flex flex-wrap gap-3">
+            {publishers.map((publisher) => (
+              <label class="inline-flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200" data-testid={`publisher-filter-${publisher}`}>
+                <input type="checkbox" value={publisher} data-filter-type="publisher" data-filter-value={publisher} data-testid={`publisher-filter-input-${publisher}`} class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-purple-500 focus:ring-purple-500" />
+                <span>{publisher}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </div>
+    </section>
+
     <div>
       <h2 class="text-2xl font-medium mb-6 text-slate-100">Featured Games</h2>
 
       {games.length === 0 ? (
         <EmptyState text="No games available at the moment." />
       ) : (
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="games-grid">
-          {games.map((game) => <GameCard game={game} />)}
-        </div>
+        <>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="games-grid">
+            {games.map((game) => <GameCard game={game} />)}
+          </div>
+          <div class="mt-6 hidden" data-testid="game-empty-state" role="status" aria-live="polite">
+            <EmptyState text="No games match your filters." />
+          </div>
+        </>
       )}
     </div>
   </div>
+
+  <script>
+    const searchInput = document.querySelector<HTMLInputElement>('[data-testid="game-search"]');
+    const sortSelect = document.querySelector<HTMLSelectElement>('[data-testid="game-sort"]');
+    const filters = Array.from(document.querySelectorAll<HTMLInputElement>('[data-filter-type]'));
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="game-card"]'));
+    const emptyState = document.querySelector<HTMLElement>('[data-testid="game-empty-state"]');
+    const grid = document.querySelector<HTMLElement>('[data-testid="games-grid"]');
+
+    function selectedValues(type: 'category' | 'publisher'): string[] {
+      return filters
+        .filter((element) => element.dataset.filterType === type && element.checked)
+        .map((element) => element.value);
+    }
+
+    function sortCards(): void {
+      if (!grid) return;
+
+      const cardsToSort = Array.from(grid.querySelectorAll<HTMLElement>('[data-testid="game-card"]'));
+      const order = sortSelect?.value ?? 'title-asc';
+
+      cardsToSort.sort((left, right) => {
+        const leftTitle = (left.getAttribute('data-game-title') ?? '').toLowerCase();
+        const rightTitle = (right.getAttribute('data-game-title') ?? '').toLowerCase();
+        const leftRatingValue = left.getAttribute('data-game-rating');
+        const rightRatingValue = right.getAttribute('data-game-rating');
+        const leftRating = leftRatingValue === 'null' || leftRatingValue === null ? Number.NaN : Number(leftRatingValue);
+        const rightRating = rightRatingValue === 'null' || rightRatingValue === null ? Number.NaN : Number(rightRatingValue);
+
+        if (order === 'title-desc') return rightTitle.localeCompare(leftTitle);
+        if (order === 'rating-desc') return (Number.isNaN(rightRating) ? Number.NEGATIVE_INFINITY : rightRating) - (Number.isNaN(leftRating) ? Number.NEGATIVE_INFINITY : leftRating);
+        if (order === 'rating-asc') return (Number.isNaN(leftRating) ? Number.POSITIVE_INFINITY : leftRating) - (Number.isNaN(rightRating) ? Number.POSITIVE_INFINITY : rightRating);
+        return leftTitle.localeCompare(rightTitle);
+      });
+
+      cardsToSort.forEach((card) => grid.appendChild(card));
+    }
+
+    function applyFilters(): void {
+      const query = (searchInput?.value ?? '').trim().toLowerCase();
+      const categorySelection = selectedValues('category');
+      const publisherSelection = selectedValues('publisher');
+      let visibleCount = 0;
+
+      cards.forEach((card) => {
+        const title = (card.getAttribute('data-game-title') ?? '').toLowerCase();
+        const category = card.getAttribute('data-game-category') ?? '';
+        const publisher = card.getAttribute('data-game-publisher') ?? '';
+        const matchesSearch = !query || title.includes(query);
+        const matchesCategory = categorySelection.length === 0 || categorySelection.includes(category);
+        const matchesPublisher = publisherSelection.length === 0 || publisherSelection.includes(publisher);
+        const visible = matchesSearch && matchesCategory && matchesPublisher;
+
+        card.hidden = !visible;
+        if (visible) visibleCount += 1;
+      });
+
+      if (emptyState) {
+        emptyState.classList.toggle('hidden', visibleCount > 0);
+      }
+
+      sortCards();
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', applyFilters);
+    }
+
+    if (sortSelect) {
+      sortSelect.addEventListener('change', applyFilters);
+    }
+
+    filters.forEach((filter) => {
+      filter.addEventListener('change', applyFilters);
+    });
+
+    applyFilters();
+  </script>
 </Layout>

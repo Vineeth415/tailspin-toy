@@ -1,0 +1,43 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Layout from '../../layouts/Layout.astro';
+import GameCard from '../../components/GameCard.astro';
+import PageHero from '../../components/PageHero.astro';
+import EmptyState from '../../components/EmptyState.astro';
+import { getDatabase } from '../../lib/db';
+import { getAllPublishers, getGamesByPublisher, getPublisherById } from '../../lib/games';
+
+export const prerender = true;
+
+export const getStaticPaths = (async () => {
+  const publishers = await getAllPublishers(getDatabase());
+  return publishers.map((publisher) => ({ params: { id: String(publisher.id) } }));
+}) satisfies GetStaticPaths;
+
+const { id } = Astro.params;
+const publisherId = Number(id);
+const publisher = await getPublisherById(getDatabase(), publisherId);
+const games = await getGamesByPublisher(getDatabase(), publisherId);
+
+if (!publisher) {
+  return Astro.redirect('/404');
+}
+---
+
+<Layout title={`${publisher.name} - Tailspin Toys`}>
+  <div class="py-8">
+    <PageHero title={publisher.name} subtitle={publisher.description ?? 'Discover more games from this publisher.'} />
+
+    <div class="mt-8">
+      <h2 class="text-2xl font-medium mb-6 text-slate-100">Games from {publisher.name}</h2>
+
+      {games.length === 0 ? (
+        <EmptyState text="No games are available for this publisher yet." />
+      ) : (
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="publisher-games-grid">
+          {games.map((game) => <GameCard game={game} />)}
+        </div>
+      )}
+    </div>
+  </div>
+</Layout>
