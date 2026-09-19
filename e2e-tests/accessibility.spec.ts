@@ -220,4 +220,44 @@ test.describe('Accessibility Tests', () => {
       await expect(gameCardSvgs.nth(i)).toHaveAttribute('aria-hidden', 'true');
     }
   });
+
+  test('high-contrast mode toggles and persists across navigation', async ({ page }) => {
+    await page.goto('/');
+
+    const toggle = page.getByTestId('high-contrast-toggle');
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await expect(toggle).toHaveAttribute('aria-label', 'Enable high contrast mode');
+    await expect(page.locator('html')).not.toHaveClass(/high-contrast/);
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(toggle).toHaveAttribute('aria-label', 'Disable high contrast mode');
+    await expect(page.locator('html')).toHaveClass(/high-contrast/);
+    await expect(page.locator('body')).toHaveClass(/bg-black/);
+
+    await page.goto('/about');
+    await expect(page.locator('html')).toHaveClass(/high-contrast/);
+    await expect(page.getByTestId('high-contrast-toggle')).toHaveAttribute('aria-pressed', 'true');
+
+    await page.getByTestId('high-contrast-toggle').click();
+    await expect(page.locator('html')).not.toHaveClass(/high-contrast/);
+    await expect(page.getByTestId('high-contrast-toggle')).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.getByTestId('high-contrast-toggle')).toHaveAttribute('aria-label', 'Enable high contrast mode');
+
+    await page.reload();
+    await expect(page.locator('html')).not.toHaveClass(/high-contrast/);
+    await expect(page.getByTestId('high-contrast-toggle')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('high-contrast toggle is keyboard accessible and exposes pressed state', async ({ page }) => {
+    await page.goto('/');
+    const toggle = page.getByTestId('high-contrast-toggle');
+
+    await toggle.focus();
+    await expect(toggle).toBeFocused();
+    await page.keyboard.press('Space');
+
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('html')).toHaveClass(/high-contrast/);
+  });
 });
