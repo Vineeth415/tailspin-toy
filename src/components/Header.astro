@@ -2,29 +2,60 @@
 import Menu from '../assets/icons/menu.svg';
 ---
 
-<header class="bg-blue-500 dark:bg-blue-700 text-white p-4 shadow-md transition-colors duration-300">
+<header class="border-b border-transparent bg-blue-700 text-white p-4 shadow-md transition-colors duration-300 motion-reduce:transition-none high-contrast:bg-black high-contrast:border-white">
   <div class="container mx-auto flex justify-between items-center pl-4 pr-4">
     <div class="flex items-center">
       <div class="relative group">
-        <button id="menu-toggle" class="focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-500 rounded mr-4" aria-label="Toggle menu" aria-expanded="false" aria-controls="menu">
+        <button id="menu-toggle" class="mr-4 min-h-11 min-w-11 rounded focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-500 high-contrast:focus:ring-yellow-300 high-contrast:focus:ring-offset-black" aria-label="Toggle menu" aria-expanded="false" aria-controls="menu" type="button" data-testid="menu-toggle">
           <Menu class="h-6 w-6" aria-hidden="true" />
         </button>
-        <nav id="menu" aria-label="Main" class="hidden absolute left-0 mt-2 w-48 bg-white dark:bg-slate-800 text-slate-800 dark:text-white rounded shadow-lg z-10 transition-colors duration-300">
+        <nav id="menu" aria-label="Main" class="hidden absolute left-0 mt-2 w-48 rounded bg-white text-slate-800 shadow-lg z-10 transition-colors duration-300 motion-reduce:transition-none dark:bg-slate-800 dark:text-white high-contrast:bg-black high-contrast:text-white high-contrast:ring-1 high-contrast:ring-white">
           <ul class="py-1">
-            <li><a href="/" class="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700">Home</a></li>
-            <li><a href="/about" class="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700">About</a></li>
+            <li><a href="/" class="block min-h-11 px-4 py-3 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:hover:bg-slate-700 high-contrast:hover:bg-slate-800 high-contrast:focus:ring-yellow-300" data-testid="nav-home">Home</a></li>
+            <li><a href="/about" class="block min-h-11 px-4 py-3 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:hover:bg-slate-700 high-contrast:hover:bg-slate-800 high-contrast:focus:ring-yellow-300" data-testid="nav-about">About</a></li>
           </ul>
         </nav>
       </div>
-      <div class="text-xl font-bold"><a href="/" class="hover:underline">Tailspin Toys</a></div>
+      <div class="text-xl font-bold"><a href="/" class="rounded hover:underline focus:outline-none focus:ring-2 focus:ring-white high-contrast:focus:ring-yellow-300" data-testid="site-logo">Tailspin Toys</a></div>
     </div>
+    <button
+      id="high-contrast-toggle"
+      type="button"
+      class="min-h-11 rounded-lg border border-white/60 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-500 high-contrast:border-yellow-300 high-contrast:text-yellow-300 high-contrast:focus:ring-yellow-300 high-contrast:focus:ring-offset-black"
+      aria-pressed="false"
+      data-testid="high-contrast-toggle"
+    >
+      High contrast
+    </button>
   </div>
 </header>
 
 <script>
-  // Toggle menu visibility when hamburger is clicked
-  const menuToggle = document.getElementById('menu-toggle');
-  const menu = document.getElementById('menu');
+  const menuToggle = document.querySelector<HTMLButtonElement>('#menu-toggle');
+  const menu = document.querySelector<HTMLElement>('#menu');
+  const highContrastToggle = document.querySelector<HTMLButtonElement>('#high-contrast-toggle');
+  const highContrastStorageKey = 'tailspin-high-contrast';
+
+  function setHighContrast(enabled: boolean): void {
+    document.documentElement.classList.toggle('high-contrast', enabled);
+    highContrastToggle?.setAttribute('aria-pressed', String(enabled));
+    highContrastToggle?.setAttribute('aria-label', `${enabled ? 'Disable' : 'Enable'} high contrast mode`);
+
+    try {
+      localStorage.setItem(highContrastStorageKey, String(enabled));
+    } catch {
+      // The preference still applies for this page when storage is unavailable.
+    }
+  }
+
+  if (highContrastToggle) {
+    const initiallyEnabled = document.documentElement.classList.contains('high-contrast');
+    highContrastToggle.setAttribute('aria-pressed', String(initiallyEnabled));
+    highContrastToggle.setAttribute('aria-label', `${initiallyEnabled ? 'Disable' : 'Enable'} high contrast mode`);
+    highContrastToggle.addEventListener('click', () => {
+      setHighContrast(!document.documentElement.classList.contains('high-contrast'));
+    });
+  }
   
   if (menuToggle && menu) {
     menuToggle.addEventListener('click', () => {
